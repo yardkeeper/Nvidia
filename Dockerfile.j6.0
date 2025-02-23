@@ -1,0 +1,57 @@
+FROM ubuntu:jammy
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+
+
+
+RUN apt update && \
+    apt install  --no-install-recommends dirmngr gpg-agent build-essential mc wget vim nano git debconf-utils keyboard-configuration sudo ca-certificates  apt-utils software-properties-common -y  && \
+    apt upgrade -y && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt clean
+
+
+
+COPY sources_jammy.list /etc/apt/sources.list
+COPY ca-certificates.crt /root
+COPY public.gpg.key /root
+RUN  cp /root/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt && apt-key add /root/public.gpg.key
+
+RUN  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
+     dpkg -i cuda-keyring_1.1-1_all.deb && apt  update
+
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
+    apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" && apt clean
+
+
+RUN apt update
+RUN apt install -y cuda-12-0
+RUN apt install -y cuda-12-2
+RUN apt install -y cuda-toolkit-12-2
+RUN apt install -y libcudnn8=8.9.4.25-1+cuda12.2 libcudnn8-dev=8.9.4.25-1+cuda12.2
+
+RUN apt install  mosquitto-dev libmosquitto-dev  libmosquittopp-dev mosquitto-clients ffmpeg libavdevice-dev liblapack-dev libsuitesparse-dev libpng-dev \
+    libv4l-dev  v4l-utils libudev-dev   libjson-c-dev v4l2loopback-dkms v4l-conf v4l-utils pkg-config libgtk-3-dev libavcodec-dev libavformat-dev libswscale-dev libxvidcore-dev libx264-dev libjpeg-dev \
+    libpng-dev libtiff-dev   libatlas-base-dev python3-dev python3-numpy  libtbb-dev libdc1394-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev \
+    libglvnd0 libgl1-mesa-glx libgl1-mesa-glx libgl1-mesa-dri  mesa-utils  ffmpeg openexr libopengl0 libxcb-xinerama0 libtbb2 xvfb  nautilus mesa-utils-extra xvfb \
+    xauth x11-utils x11-xserver-utils  xorg xserver-xorg-input-evdev  xserver-xorg-input-all -y 
+  
+
+COPY nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-12.0_1.0-1_amd64.deb /root
+RUN  dpkg -i /root/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-12.0_1.0-1_amd64.deb &&\
+     cp /var/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-12.0/nv-tensorrt-local-42B2FC56-keyring.gpg /usr/share/keyrings/ &&\
+     rm /etc/apt/sources.list.d/cuda-ubuntu2204-x86_64.list && apt clean && apt update 
+
+
+ENV TRT_VERSION=8.6.1.6-1+cuda12.0
+ENV TRT_INSTALL_PACKAGES="tensorrt-dev=${TRT_VERSION} libnvinfer-dev=${TRT_VERSION} libnvinfer-plugin-dev=${TRT_VERSION}"
+RUN apt install -y ${TRT_INSTALL_PACKAGES} $(apt install -y ${TRT_INSTALL_PACKAGES} 2>&1 | grep "Depends:" | sed -E "s/.*Depends: ([a-z0-9\-]+).*/\1=${TRT_VERSION}/" | tr '\n' ' ')
+
+# We can do with cmake 3.31 as well - it doesn't matter
+RUN wget "https://github.com/Kitware/CMake/releases/download/v3.30.5/cmake-3.30.5-linux-x86_64.sh"
+RUN chmod a+x cmake-3.30.5-linux-x86_64.sh
+RUN ./cmake-3.30.5-linux-x86_64.sh --skip-license --prefix=/usr
+
+# librt.so is not needed, but it is referenced in visionaod dependencies - we will not fight that for now
+RUN ln -s /usr/lib/x86_64-linux-gnu/librt.so.1 /usr/lib/x86_64-linux-gnu/librt.so
