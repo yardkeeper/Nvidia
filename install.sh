@@ -28,7 +28,7 @@ export -f remove
 
 repo(){
  
-  ping -c1 10.0.0.222 > /dev/null
+  ping -c1 192.133.13.225 > /dev/null
   if [[ $? -eq 0 ]]; then
   
     echo "Nexus server reachable, installing from Nexus Repository"
