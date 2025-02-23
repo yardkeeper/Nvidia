@@ -28,7 +28,7 @@ export -f remove
 
 repo(){
  
-  ping -c1 192.13.130.225 > /dev/null
+  ping -c1 10.0.0.222 > /dev/null
   if [[ $? -eq 0 ]]; then
   
     echo "Nexus server reachable, installing from Nexus Repository"
@@ -51,7 +51,7 @@ repo(){
       wget $REPO_URL/cuda-keyring_1.1-1_all.deb && sudo dpkg -i cuda-keyring_1.1-1_all.deb && sudo apt update
       echo "deb $NVIDIA_REPO_URL /" | sudo tee -a /etc/apt/sources.list
     else
-      # Neither Nexus nor Nvidia server is reachable
+
       echo "Both Nexus and Nvidia repositories are unavailable."
       exit 0
     fi
