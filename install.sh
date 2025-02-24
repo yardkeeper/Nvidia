@@ -3,7 +3,7 @@ echo "Welcome to I.R.N.C.O.L.T - Intalling and removing nvidia cuda and other li
 CURRENT_DIR=$(pwd)
 
 NVIDIA_REPO_URL="https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/"
-NEXUS_REPO_URL="https://nexus.foresightauto.com/repository/nvidia2204"
+NEXUS_REPO_URL="https://nexus.compdomain.com/repository/nvidia2204"
 TRT_VERSION="8.6.1.6-1+cuda12.0"
 DEBS="$CURRENT_DIR/debs"
 
@@ -32,7 +32,7 @@ export -f remove
 
 function repo(){
  
-  ping -c1 10.0.0.222 > /dev/null
+  ping -c1 192.133.13.26 > /dev/null
   if [[ $? -eq 0 ]]; then
   
     echo "Nexus server reachable, installing from Nexus Repository"
