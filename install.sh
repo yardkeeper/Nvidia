@@ -1,16 +1,20 @@
 #!/bin/bash
 echo "Welcome to I.R.N.C.O.L.T - Intalling and removing nvidia cuda and other libraries tool"
+CURRENT_DIR=$(pwd)
 
 NVIDIA_REPO_URL="https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/"
 NEXUS_REPO_URL="https://nexus.foresightauto.com/repository/nvidia2204"
+TRT_VERSION="8.6.1.6-1+cuda12.0"
+DEBS="$CURRENT_DIR/debs"
 
-add_apt_key() {
+
+function add_apt_key() {
   key=$1
   apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv $key
 }
-export -f 
+export -f add_apt_key
 
-remove(){
+function remove(){
   apt remove nvidia-* libnvidia-* cuda-* libcudnn8 -y
   packages=$(dpkg -l | egrep 'libnv|nvidia|cuda|cud' | cut -d " " -f3)
 
@@ -26,9 +30,9 @@ remove(){
 export -f remove
 
 
-repo(){
+function repo(){
  
-  ping -c1 192.133.13.225 > /dev/null
+  ping -c1 10.0.0.222 > /dev/null
   if [[ $? -eq 0 ]]; then
   
     echo "Nexus server reachable, installing from Nexus Repository"
@@ -59,15 +63,34 @@ repo(){
 }
 export -f repo
 
+function exit_f(){
+exit 0 
+}
+export -f exit_f
 
 
-install_nvidia_setup(){
+function install_local_packages() {
+    dir=$1
+    
+    if [[ ! -d "$dir" ]]; then
+        echo "Error: Folder '$dir' does not exist."
+        exit 1
+    else
+        
+        sudo dpkg -i --force-all  $dir/*.deb
+    fi
+    
+}
+
+function install_nvidia_tools(){
 
 repo 
 
 apt update && apt install cuda-12-0 cuda-12-2 cuda-toolkit-12-2 libcudnn8=8.9.4.25-1+cuda12.2 libcudnn8-dev=8.9.4.25-1+cuda12.2
-
-
+install_local_packages "$DEBS"
+cp /var/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-12.0/nv-tensorrt-local-42B2FC56-keyring.gpg /usr/share/keyrings/ &&\
+sudo cp /var/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-12.0/nv-tensorrt-local-42B2FC56-keyring.gpg /usr/share/keyrings/ && rm /etc/apt/sources.list.d/cuda-ubuntu2204-x86_64.list && apt clean && apt update 
+apt install sudo apt install tensorrt=$TRT_VERSION tensorrt-dev=$TRT_VERSION libnvinfer-dev=$TRT_VERSION libnvinfer-plugin-dev=$TRT_VERSION libnvinfer-headers-dev=$TRT_VERSION  libnvinfer-headers-plugin-dev=$TRT_VERSION libnvinfer-lean-dev=$TRT_VERSION libnvinfer-dispatch-dev=$TRT_VERSION libnvinfer-vc-plugin-dev=$TRT_VERSION libnvonnxparsers-dev=$TRT_VERSION libnvinfer-bin=$TRT_VERSION libnvinfer-samples=$TRT_VERSION -y
 }
 
 
@@ -77,19 +100,23 @@ while true; do
     echo "Installation options:"
     echo ""
     echo "1 - nVidia tools for Ubuntu 22.04 LTS"
-    
     echo "r - Remove all installed packages"
+    echo "e - Exit from installation script"
     read choice
     
     case "$choice" in
         1)
             
-            install_nvidia_setup
+            install_nvidia_tools
             
         ;;
      
          r)
              remove
+        
+        ;;
+        e)
+             exit_f
         
         ;;
          *)
