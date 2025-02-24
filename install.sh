@@ -3,7 +3,7 @@ echo "Welcome to I.R.N.C.O.L.T - Intalling and removing nvidia cuda and other li
 CURRENT_DIR=$(pwd)
 
 NVIDIA_REPO_URL="https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/"
-NEXUS_REPO_URL="https://nexus.compdomain.com/repository/nvidia2204"
+NEXUS_REPO_URL="https://nexus.foresightauto.com/repository/nvidia2204"
 TRT_VERSION="8.6.1.6-1+cuda12.0"
 DEBS="$CURRENT_DIR/debs"
 
@@ -20,9 +20,7 @@ function remove(){
 
   for pkg in $packages
    do
-     #echo $pkg
      dpkg -P --force-all  $pkg
-
   done
   apt autoremove -y
   rm -rf /usr/local/cuda*
@@ -32,7 +30,7 @@ export -f remove
 
 function repo(){
  
-  ping -c1 192.113.13.25 > /dev/null
+  ping -c1 10.0.0.222 > /dev/null
   if [[ $? -eq 0 ]]; then
   
     echo "Nexus server reachable, installing from Nexus Repository"
@@ -86,7 +84,7 @@ function install_nvidia_tools(){
 
 repo 
 
-apt update && apt install cuda-12-0 cuda-12-2 cuda-toolkit-12-2 libcudnn8=8.9.4.25-1+cuda12.2 libcudnn8-dev=8.9.4.25-1+cuda12.2
+apt update && apt install cuda-12-0 cuda-12-2 cuda-toolkit-12-2 libcudnn8=8.9.4.25-1+cuda12.2 libcudnn8-dev=8.9.4.25-1+cuda12.2 -y 
 install_local_packages "$DEBS"
 cp /var/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-12.0/nv-tensorrt-local-42B2FC56-keyring.gpg /usr/share/keyrings/ &&\
 sudo cp /var/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-12.0/nv-tensorrt-local-42B2FC56-keyring.gpg /usr/share/keyrings/ && rm /etc/apt/sources.list.d/cuda-ubuntu2204-x86_64.list && apt clean && apt update 
@@ -94,6 +92,22 @@ apt install sudo apt install tensorrt=$TRT_VERSION tensorrt-dev=$TRT_VERSION lib
 }
 
 
+
+if [ $# -gt 0 ]; then
+    case "$1" in
+        -i)
+            install_nvidia_tools
+            ;;
+        -r)
+            remove
+            ;;
+        *)
+            echo "Invalid parameter. Use -i for nVidia tools, -r for remove"
+            exit 1
+            ;;
+    esac
+    exit 0
+fi
 
 
 while true; do
