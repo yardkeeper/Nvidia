@@ -1,8 +1,10 @@
 #!/bin/bash
 
 REMOTE_HOST="192.168.55.1"
-REMOTE_USER="user"
 CURRENT_LOCATION=$(pwd)
+
+echo -n "Enter username for remote user: "
+read  REMOTE_USER
 echo -n "Enter SSH password for $REMOTE_USER@$REMOTE_HOST: "
 read -s REMOTE_PASSWORD 
 
