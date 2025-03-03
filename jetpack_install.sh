@@ -36,17 +36,29 @@ done
 export -f ssh_check
 
 
-function ssh_copy(){
-
-   sshpass -p "$REMOTE_PASSWORD" scp -o StrictHostKeyChecking=no  -r $CURRENT_LOCATION/debs $REMOTE_USER@$REMOTE_HOST:/home/$REMOTE_USER
+function ssh_copy() {
+    for dir in debs deps; 
+    do
+        sshpass -p "$REMOTE_PASSWORD" scp -o StrictHostKeyChecking=no -r "$CURRENT_LOCATION/$dir" "$REMOTE_USER@$REMOTE_HOST:/home/$REMOTE_USER"
+    done
 }
 
 function install_orin(){
 flash "jetson-agx-orin-devkit"
 ssh_check
 ssh_copy
-sshpass -p "$REMOTE_PASSWORD" ssh $REMOTE_USER@$REMOTE_HOST 'sudo  -S dpkg -i /home/'$REMOTE_USER'/debs/*'
-sshpass -p "$REMOTE_PASSWORD" ssh $REMOTE_USER@$REMOTE_HOST 'sudo  -S dpkg -i /home/'$REMOTE_USER'/deps/*' 
+
+sshpass -p "$REMOTE_PASSWORD" ssh -T $REMOTE_USER@$REMOTE_HOST << EOF
+  echo "$REMOTE_PASSWORD" | sudo -S dpkg -i /home/$REMOTE_USER/debs/*
+  echo "$REMOTE_PASSWORD" | sudo -S tar -xzf /home/$REMOTE_USER/deps/OpenCV-4.5.0-aarch64-Orin-JetPack-5.1.2.tar.gz --strip-components=1 -C /usr/local/
+  echo "$REMOTE_PASSWORD" | sudo -S ldconfig
+  echo "$REMOTE_PASSWORD" | sudo -S mkdir -p /mnt/foresight_videos
+  echo "$REMOTE_PASSWORD" | sudo -S chown -R nobody:nogroup /mnt/foresight_videos/
+  echo "$REMOTE_PASSWORD" | sudo -S chmod 777 /mnt/foresight_videos/
+  echo "/mnt/  192.168.1.0/24(fsid=1001,rw,sync,no_subtree_check)" | sudo tee -a /etc/exports > /dev/null
+EOF
+
+  
 }
 
 
