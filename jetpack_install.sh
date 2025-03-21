@@ -24,7 +24,7 @@ rootfs(){
 }
 
 rootfs_cleanup(){
-  if [ -d "$folder" ];
+  if [ -d "$CURRENT_LOCATION/rootfs" ];
   then
     rm -rf $CURRENT_LOCATION/rootfs
   else
