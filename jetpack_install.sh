@@ -25,12 +25,14 @@ rootfs(){
 
 rootfs_cleanup(){
 
-  if [ -f "$CURRENT_LOCATION/bootloader/system.img" ]; then
+  if [ -f "$CURRENT_LOCATION/bootloader/system.img" ]; 
+  then
     rm -f "$CURRENT_LOCATION/bootloader/system.img"
   fi
 
   
-  if [ -d "$CURRENT_LOCATION/rootfs" ]; then
+  if [ -d "$CURRENT_LOCATION/rootfs" ]; 
+  then
     rm -rf "$CURRENT_LOCATION/rootfs"
   else
     sleep 1s
@@ -94,14 +96,11 @@ function ssh_copy() {
 
 
 function ssh_install(){
-
 sshpass -p "$REMOTE_PASSWORD" ssh -T $REMOTE_USER@$REMOTE_HOST << EOF
   echo "$REMOTE_PASSWORD" | sudo -S dpkg -i /home/$REMOTE_USER/debs/*
-
 EOF
-
-
 }
+
 
 function install_orin(){
 check_packages_installed "sshpass" "qemu-user-static"
