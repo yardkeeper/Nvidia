@@ -97,11 +97,6 @@ function ssh_install(){
 
 sshpass -p "$REMOTE_PASSWORD" ssh -T $REMOTE_USER@$REMOTE_HOST << EOF
   echo "$REMOTE_PASSWORD" | sudo -S dpkg -i /home/$REMOTE_USER/debs/*
-  echo "$REMOTE_PASSWORD" | sudo -S ldconfig
-  echo "$REMOTE_PASSWORD" | sudo -S mkdir -p /mnt/foresight_videos
-  echo "$REMOTE_PASSWORD" | sudo -S chown -R nobody:nogroup /mnt/foresight_videos/
-  echo "$REMOTE_PASSWORD" | sudo -S chmod 777 /mnt/foresight_videos/
-  echo "/mnt/  192.168.1.0/24(fsid=1001,rw,sync,no_subtree_check)" | sudo tee -a /etc/exports > /dev/null
 
 EOF
 
