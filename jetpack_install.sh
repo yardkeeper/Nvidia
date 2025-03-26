@@ -20,20 +20,25 @@ check_packages_installed() {
 }
 
 rootfs(){
-   tar -xzvpf rootfs.tar.gz
+   tar -xzvpf $1.tar.gz
 }
 
 rootfs_cleanup(){
-  if [ -d "$CURRENT_LOCATION/rootfs" ];
-  then
-    rm -rf $CURRENT_LOCATION/rootfs
+
+  if [ -f "$CURRENT_LOCATION/bootloader/system.img" ]; then
+    rm -f "$CURRENT_LOCATION/bootloader/system.img"
+  fi
+
+  
+  if [ -d "$CURRENT_LOCATION/rootfs" ]; then
+    rm -rf "$CURRENT_LOCATION/rootfs"
   else
     sleep 1s
   fi
 }
 
 generate_random_id() {
-  openssl rand -base64 7 | tr -dc 'A-Za-z0-9' | head -c 10
+  openssl rand -base64 7 | tr -dc 'A-Z0-9' | head -c 10
 }
 
 function create_default_user(){
@@ -43,7 +48,16 @@ function create_default_user(){
    
 
 function flash(){
-    bash flash.sh "$1" mmcblk0p1
+    bash flash.sh  "$1" mmcblk0p1
+    if [ $? -eq 1 ]; then
+    echo "Exiting script."
+    exit 1
+fi
+
+}
+
+function flashnano(){
+    bash tools/kernel_flash/l4t_initrd_flash.sh --external-device nvme0n1p1 -c tools/kernel_flash/flash_l4t_external.xml -p "-c bootloader/generic/cfg/flash_t234_qspi.xml" --network usb0 $1 external
     if [ $? -eq 1 ]; then
     echo "Exiting script."
     exit 1
@@ -78,37 +92,53 @@ function ssh_copy() {
     done
 }
 
+
+function ssh_install(){
+
+sshpass -p "$REMOTE_PASSWORD" ssh -T $REMOTE_USER@$REMOTE_HOST << EOF
+  echo "$REMOTE_PASSWORD" | sudo -S dpkg -i /home/$REMOTE_USER/debs/*
+  echo "$REMOTE_PASSWORD" | sudo -S ldconfig
+  echo "$REMOTE_PASSWORD" | sudo -S mkdir -p /mnt/foresight_videos
+  echo "$REMOTE_PASSWORD" | sudo -S chown -R nobody:nogroup /mnt/foresight_videos/
+  echo "$REMOTE_PASSWORD" | sudo -S chmod 777 /mnt/foresight_videos/
+  echo "/mnt/  192.168.1.0/24(fsid=1001,rw,sync,no_subtree_check)" | sudo tee -a /etc/exports > /dev/null
+
+EOF
+
+
+}
+
 function install_orin(){
 check_packages_installed "sshpass" "qemu-user-static"
 rootfs_cleanup
-rootfs
+rootfs "rootfs"
 create_default_user
 flash "jetson-agx-orin-devkit"
 ssh_check
 ssh_copy
-
-#SRC_DIR="./aksusbd-9.13.1"
-
-sshpass -p "$REMOTE_PASSWORD" ssh -T $REMOTE_USER@$REMOTE_HOST << EOF
- echo "$REMOTE_PASSWORD" | sudo -S dpkg -i /home/$REMOTE_USER/debs/*
- #echo "$REMOTE_PASSWORD" | sudo -S tar -xzf /home/$REMOTE_USER/deps/OpenCV-4.5.0-aarch64-Orin-JetPack-5.1.2.tar.gz --strip-components=1 -C /usr/local/
- # echo "$REMOTE_PASSWORD" | sudo -S tar -xzvf /home/$REMOTE_USER/deps/aksusbd_33876-9.13.1_arm64_and_amd64.tar.gz
- # echo "$REMOTE_PASSWORD" | sudo -S ./aksusbd-9.13.1/dinst "$SRC_DIR"
-  
-EOF
-
- 
-  
+ssh_install  
 }
 
+function install_orinnano(){
+check_packages_installed "sshpass" "qemu-user-static"
+rootfs_cleanup
+rootfs "rootfs_nano"
+create_default_user
+flashnano "jetson-orin-nano-devkit-super"
+ssh_check
+ssh_copy
+ssh_install
+
+
+}
 
 while true; do
     echo "Jetpack installion tool"
     echo ""
     echo "Installation options:"
     echo ""
-    echo "1 - Install Jetpack 5.1.2 for Nvidia Orin "
-    
+    echo "1 - Install Jetpack 6.2 for Nvidia Orin "
+    echo "2 - Install Jetpack 6.2 for Nvidia Orin Nano"
     read choice
     
     case "$choice" in
@@ -117,17 +147,22 @@ while true; do
             install_orin
             break
         ;;
+        
+        2)
+            
+            install_orinnano
+            break
+        ;;
 
-     
      
          r)
              remove
-        
         ;;
+
         e)
              exit_f
-        
         ;;
+
          *)
             echo "Invalid input."
         ;;
